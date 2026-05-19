@@ -1,25 +1,47 @@
-name: Python CI/CD Pipeline
+name: Master CI/CD Pipeline
 on: [push]
 
 jobs:
-  # 첫 번째 Job: 테스트
+  # 1. 테스트 단계 (Matrix 빌드 활용)
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # 파이썬 3.9, 3.10 두 환경에서 동시에 각각 테스트를 돌립니다.
+        python-version: ["3.9", "3.10"]
+    
+    name: Python ${{ matrix.python-version }} Test
     steps:
       - uses: actions/checkout@v4
       - name: 파이썬 설정
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: ${{ matrix.python-version }}
       - name: 테스트 실행
-        run: echo "모든 테스트를 성공적으로 통과했습니다!"
+        run: echo "Python ${{ matrix.python-version }} 환경에서 테스트 완료!"
 
-  # 두 번째 Job: 배포 (테스트가 끝나야 실행됨)
+  # 2. 배포 단계 (조건부 실행 & Docker 실전 활용)
   deploy:
-    needs: test # <--- 핵심! test Job이 성공해야만 실행됩니다.
+    needs: test
+    # [조건부 실행] 오직 main 브랜치에 push 되었을 때만 실행!
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - name: 배포 서버 접속
-        run: echo "서버에 접속하여 배포를 시작합니다..."
-      - name: 배포 완료
-        run: echo "배포가 성공적으로 완료되었습니다! 🚀"
+      - name: Docker 이미지 빌드 (가상)
+        run: echo "Docker build -t my-app:latest ."
+      
+      - name: 배포 완료 알림
+        run: echo "배포 성공 메시지를 서버로 보냅니다."
+
+  # 3. 알림 단계 (Slack 연동 예시)
+  notify:
+    needs: [test, deploy]
+    # 'always()'를 쓰면 이전 단계가 성공하든 실패하든 항상 실행됩니다.
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack 알림 보내기
+        # 실제로는 'rtCamp/action-slack-notify@v2' 같은 액션을 주로 사용합니다.
+        run: |
+          echo "Status: ${{ job.status }}"
+          echo "결과를 Slack 채널로 전송했습니다! 🔔"
