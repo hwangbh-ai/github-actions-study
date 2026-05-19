@@ -1,0 +1,25 @@
+name: Python CI/CD Pipeline
+on: [push]
+
+jobs:
+  # 첫 번째 Job: 테스트
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 파이썬 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: 테스트 실행
+        run: echo "모든 테스트를 성공적으로 통과했습니다!"
+
+  # 두 번째 Job: 배포 (테스트가 끝나야 실행됨)
+  deploy:
+    needs: test # <--- 핵심! test Job이 성공해야만 실행됩니다.
+    runs-on: ubuntu-latest
+    steps:
+      - name: 배포 서버 접속
+        run: echo "서버에 접속하여 배포를 시작합니다..."
+      - name: 배포 완료
+        run: echo "배포가 성공적으로 완료되었습니다! 🚀"
